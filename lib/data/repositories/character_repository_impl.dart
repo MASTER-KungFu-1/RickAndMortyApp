@@ -17,24 +17,19 @@ class CharacterRepositoryImpl implements CharacterRepository {
       // Сначала пытаемся получить из кэша
       final cachedCharacters = await _dao.getCharacters();
 
-      if (page == 1 && cachedCharacters.isNotEmpty) {
-        // Для первой страницы возвращаем кэшированные данные
+      if (cachedCharacters.isNotEmpty) {
+        // Если есть кэшированные данные, возвращаем их
         final entities = cachedCharacters.map((dto) => dto.toEntity()).toList();
         final filteredCharacters = DuplicateFilter.removeDuplicates(entities);
         return Result.success(filteredCharacters);
       }
 
-      // Получаем новые данные с API
+      // Получаем всех персонажей с API
       try {
-        final newCharacters = await _api.getCharacters(page: page);
+        final newCharacters = await _api.getAllCharacters();
 
         // Сохраняем в кэш
-        if (page == 1) {
-          await _dao.saveCharacters(newCharacters);
-        } else {
-          // Для последующих страниц добавляем к существующим
-          await _dao.addCharacters(newCharacters);
-        }
+        await _dao.saveCharacters(newCharacters);
 
         // Получаем все кэшированные данные и фильтруем дубликаты
         final allCachedCharacters = await _dao.getCharacters();

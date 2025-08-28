@@ -157,10 +157,7 @@ class CharacterError extends CharacterState {
 /// BLoC, управляющий загрузкой персонажей, избранным и поиском
 class CharacterBloc extends Bloc<CharacterEvent, CharacterState> {
   final CharacterRepository _repository;
-  int _currentPage = 1;
-  bool _hasReachedMax = false;
 
-  final Set<int> _pagesInFlight = <int>{};
   bool _searchInFlight = false;
 
   CharacterBloc({required CharacterRepository repository})
@@ -184,85 +181,31 @@ class CharacterBloc extends Bloc<CharacterEvent, CharacterState> {
 
   Future<void> _onLoadCharacters(
       LoadCharacters event, Emitter<CharacterState> emit) async {
-    if (_pagesInFlight.contains(event.page)) {
-      return;
-    }
-    _pagesInFlight.add(event.page);
-
     try {
-      if (event.page == 1) {
-        emit(const CharacterLoading());
-        _currentPage = 1;
-        _hasReachedMax = false;
-      } else {
-        if (state is CharactersLoaded) {
-          final currentState = state as CharactersLoaded;
-          emit(CharacterLoading(
-            isLoadingMore: true,
-            currentCharacters: currentState.characters,
-          ));
-        }
-      }
+      emit(const CharacterLoading());
 
-      final result = await _repository.getCharacters(page: event.page);
+      final result = await _repository.getCharacters();
 
       if (result.isSuccess) {
         final characters = result.data!;
-        if (event.page == 1) {
-          _currentPage = 1;
-          _hasReachedMax = characters.length < 20;
-          final favoriteIds = await _safeFavoriteIds();
-          emit(CharactersLoaded(
-            characters: characters,
-            favoriteIds: favoriteIds,
-            hasReachedMax: _hasReachedMax,
-            currentPage: _currentPage,
-          ));
-        } else {
-          if (state is CharacterLoading) {
-            final loadingState = state as CharacterLoading;
+        final favoriteIds = await _safeFavoriteIds();
 
-            final previousCount = loadingState.currentCharacters.length;
-            final newCount = characters.length;
-            final pageSize = (newCount - previousCount).clamp(0, 1 << 30);
-
-            _currentPage = event.page;
-            _hasReachedMax = pageSize < 20;
-
-            final favoriteIds = await _safeFavoriteIds();
-
-            emit(CharactersLoaded(
-              characters: characters,
-              favoriteIds: favoriteIds,
-              hasReachedMax: _hasReachedMax,
-              currentPage: _currentPage,
-            ));
-          }
-        }
+        emit(CharactersLoaded(
+          characters: characters,
+          favoriteIds: favoriteIds,
+          hasReachedMax: true, // Все персонажи загружены
+          currentPage: 1,
+        ));
       } else {
-        // Ошибка загрузки. Если это была догрузка, оставим текущий список и
-        // зафиксируем конец (hasReachedMax = true), чтобы избежать вечной загрузки.
-        if (event.page > 1 && state is CharacterLoading) {
-          final loadingState = state as CharacterLoading;
-          final previous = loadingState.currentCharacters;
-          final favoriteIds = await _safeFavoriteIds();
-          emit(CharactersLoaded(
-            characters: previous,
-            favoriteIds: favoriteIds,
-            hasReachedMax: true,
-            currentPage: _currentPage,
-          ));
-        } else {
-          emit(CharacterError(
-            error: result.error!,
-            currentCharacters: state is CharactersLoaded
-                ? (state as CharactersLoaded).characters
-                : null,
-            currentFavoriteIds: state is CharactersLoaded
-                ? (state as CharactersLoaded).favoriteIds
-                : null,
-          ));
-        }
+        emit(CharacterError(
+          error: result.error!,
+          currentCharacters: state is CharactersLoaded
+              ? (state as CharactersLoaded).characters
+              : null,
+          currentFavoriteIds: state is CharactersLoaded
+              ? (state as CharactersLoaded).favoriteIds
+              : null,
+        ));
       }
     } catch (e, stackTrace) {
       emit(CharacterError(
@@ -274,8 +217,6 @@ class CharacterBloc extends Bloc<CharacterEvent, CharacterState> {
             ? (state as CharactersLoaded).favoriteIds
             : null,
       ));
-    } finally {
-      _pagesInFlight.remove(event.page);
     }
   }
 

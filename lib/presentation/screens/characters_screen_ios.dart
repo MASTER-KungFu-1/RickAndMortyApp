@@ -1,26 +1,23 @@
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/character.dart';
 import '../bloc/character_bloc.dart';
-
 import '../widgets/error_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/services/image_service.dart';
 import '../../core/services/image_cache_manager.dart';
 
-class CharactersScreen extends StatefulWidget {
-  const CharactersScreen({super.key});
+class CharactersScreenIOS extends StatefulWidget {
+  const CharactersScreenIOS({super.key});
 
   @override
-  State<CharactersScreen> createState() => _CharactersScreenState();
+  State<CharactersScreenIOS> createState() => _CharactersScreenIOSState();
 }
 
-class _CharactersScreenState extends State<CharactersScreen>
+class _CharactersScreenIOSState extends State<CharactersScreenIOS>
     with TickerProviderStateMixin {
-  // Индекс текущей карточки
   int _index = 0;
-  // Текущее смещение и угол карточки (для жестов)
   Offset _position = Offset.zero;
   double _angle = 0;
   late AnimationController _resetCtrl;
@@ -132,35 +129,27 @@ class _CharactersScreenState extends State<CharactersScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocBuilder<CharacterBloc, CharacterState>(
-        builder: (context, state) {
-          if (state is CharactersLoaded) {
-            return _buildCharacterStack(state.characters,
-                showCornerLoader: false);
-          } else if (state is CharacterLoading && state.isLoadingMore) {
-            return _buildCharacterStack(state.currentCharacters,
-                showCornerLoader: true);
-          } else if (state is CharacterLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is CharacterError) {
-            return AppErrorWidget(
-              error: state.error,
-              customMessage: 'Не удалось загрузить персонажей',
-            );
-          } else {
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
-      ),
+    return BlocBuilder<CharacterBloc, CharacterState>(
+      builder: (context, state) {
+        if (state is CharactersLoaded) {
+          return _buildCharacterStack(state.characters);
+        } else if (state is CharacterLoading) {
+          return const Center(child: CupertinoActivityIndicator());
+        } else if (state is CharacterError) {
+          return AppErrorWidget(
+            error: state.error,
+            customMessage: 'Не удалось загрузить персонажей',
+          );
+        } else {
+          return const Center(child: CupertinoActivityIndicator());
+        }
+      },
     );
   }
 
-  /// Строит общий UI карточки персонажа для набора персонажей
-  Widget _buildCharacterStack(List<Character> characters,
-      {required bool showCornerLoader}) {
+  Widget _buildCharacterStack(List<Character> characters) {
     if (characters.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CupertinoActivityIndicator());
     }
     if (_index >= characters.length) {
       return const Center(child: Text('Больше персонажей нет'));
@@ -180,10 +169,10 @@ class _CharactersScreenState extends State<CharactersScreen>
                   angle: _angle,
                   child: Transform.translate(
                     offset: _position,
-                    child: _CharacterCardFull(character: character),
+                    child: _CharacterCardFullIOS(character: character),
                   ),
                 ),
-                _DecisionOverlay(
+                _DecisionOverlayIOS(
                   dx: _position.dx,
                   likeThreshold: _swipeThreshold,
                   nopeThreshold: -_swipeThreshold,
@@ -196,7 +185,8 @@ class _CharactersScreenState extends State<CharactersScreen>
           Positioned(
             top: 50,
             left: 20,
-            child: FloatingActionButton.small(
+            child: CupertinoButton(
+              padding: const EdgeInsets.all(12),
               onPressed: () {
                 setState(() {
                   _index--;
@@ -204,8 +194,12 @@ class _CharactersScreenState extends State<CharactersScreen>
                   _angle = 0;
                 });
               },
-              backgroundColor: Colors.white.withValues(alpha: 0.9),
-              child: const Icon(Icons.undo, color: Colors.black87),
+              color: CupertinoColors.systemBackground
+                  .resolveFrom(context)
+                  .withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(25),
+              child: const Icon(CupertinoIcons.arrow_counterclockwise,
+                  color: CupertinoColors.label),
             ),
           ),
         Positioned(
@@ -214,43 +208,35 @@ class _CharactersScreenState extends State<CharactersScreen>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.7),
+              color: CupertinoColors.systemGrey6
+                  .resolveFrom(context)
+                  .withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               '${_index + 1}/${characters.length}',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: CupertinoColors.label.resolveFrom(context),
                 fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
         ),
-        if (showCornerLoader)
-          const Positioned(
-            bottom: 20,
-            right: 20,
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
       ],
     );
   }
 }
 
-class _CharacterCardFull extends StatefulWidget {
-  const _CharacterCardFull({required this.character});
+class _CharacterCardFullIOS extends StatefulWidget {
+  const _CharacterCardFullIOS({required this.character});
   final Character character;
 
   @override
-  State<_CharacterCardFull> createState() => _CharacterCardFullState();
+  State<_CharacterCardFullIOS> createState() => _CharacterCardFullIOSState();
 }
 
-class _CharacterCardFullState extends State<_CharacterCardFull> {
+class _CharacterCardFullIOSState extends State<_CharacterCardFullIOS> {
   String? _resolvedImageUrl;
   bool _isLoading = false;
   bool _hasTriedResolve = false;
@@ -262,7 +248,7 @@ class _CharacterCardFullState extends State<_CharacterCardFull> {
   }
 
   @override
-  void didUpdateWidget(_CharacterCardFull oldWidget) {
+  void didUpdateWidget(_CharacterCardFullIOS oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.character.id != widget.character.id) {
       _resolvedImageUrl = null;
@@ -278,7 +264,6 @@ class _CharacterCardFullState extends State<_CharacterCardFull> {
     setState(() => _isLoading = true);
 
     try {
-      // Получаем URL изображения исключительно с GitHub
       final url = await ImageService.getImageUrl(
         widget.character.id.toString(),
         widget.character.name,
@@ -286,7 +271,6 @@ class _CharacterCardFullState extends State<_CharacterCardFull> {
 
       if (mounted) {
         setState(() {
-          // Используем только GitHub URL, без fallback на API
           _resolvedImageUrl = url;
           _isLoading = false;
           _hasTriedResolve = true;
@@ -295,8 +279,6 @@ class _CharacterCardFullState extends State<_CharacterCardFull> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          // В случае ошибки не используем API изображение, оставляем null
-          // Это заставит показать error widget
           _resolvedImageUrl = null;
           _isLoading = false;
           _hasTriedResolve = true;
@@ -308,13 +290,13 @@ class _CharacterCardFullState extends State<_CharacterCardFull> {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'alive':
-        return Colors.green;
+        return CupertinoColors.systemGreen;
       case 'dead':
-        return Colors.red;
+        return CupertinoColors.systemRed;
       case 'unknown':
-        return Colors.orange;
+        return CupertinoColors.systemOrange;
       default:
-        return Colors.grey;
+        return CupertinoColors.systemGrey;
     }
   }
 
@@ -328,33 +310,33 @@ class _CharacterCardFullState extends State<_CharacterCardFull> {
         fit: StackFit.expand,
         children: [
           if (imageUrl != null)
-            // Показываем GitHub изображение если URL получен
             CachedNetworkImage(
               imageUrl: imageUrl,
               fit: BoxFit.cover,
               placeholder: (context, url) => const Center(
-                child: CircularProgressIndicator(),
+                child: CupertinoActivityIndicator(),
               ),
               errorWidget: (context, url, error) => const Center(
-                child: Icon(Icons.broken_image, size: 40),
+                child: Icon(CupertinoIcons.photo, size: 40),
               ),
               cacheManager: ImageCacheManager.instance,
             )
           else if (_isLoading)
             const Center(
-              child: CircularProgressIndicator(),
+              child: CupertinoActivityIndicator(),
             )
           else
             const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.image_not_supported, size: 60, color: Colors.grey),
+                  Icon(CupertinoIcons.photo,
+                      size: 60, color: CupertinoColors.systemGrey),
                   SizedBox(height: 16),
                   Text(
                     'Изображение недоступно',
                     style: TextStyle(
-                      color: Colors.grey,
+                      color: CupertinoColors.systemGrey,
                       fontSize: 16,
                     ),
                   ),
@@ -367,35 +349,35 @@ class _CharacterCardFullState extends State<_CharacterCardFull> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
-                  colors: [Colors.black87, Colors.black54, Colors.transparent],
+                  colors: [
+                    CupertinoColors.systemBackground
+                        .resolveFrom(context)
+                        .withValues(alpha: 0.9),
+                    CupertinoColors.systemBackground
+                        .resolveFrom(context)
+                        .withValues(alpha: 0.7),
+                    CupertinoColors.systemBackground
+                        .resolveFrom(context)
+                        .withValues(alpha: 0.0),
+                  ],
                 ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Имя персонажа
                   Text(
                     widget.character.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          offset: Offset(1, 1),
-                          blurRadius: 3,
-                          color: Colors.black54,
-                        ),
-                      ],
+                      color: CupertinoColors.label.resolveFrom(context),
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // Статус с цветным индикатором
                   Row(
                     children: [
                       Container(
@@ -404,82 +386,54 @@ class _CharacterCardFullState extends State<_CharacterCardFull> {
                         decoration: BoxDecoration(
                           color: _getStatusColor(widget.character.status),
                           shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: _getStatusColor(widget.character.status)
-                                  .withValues(alpha: 0.5),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            ),
-                          ],
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         widget.character.status,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(1, 1),
-                              blurRadius: 2,
-                              color: Colors.black54,
-                            ),
-                          ],
+                          color: CupertinoColors.label.resolveFrom(context),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
-
-                  // Вид персонажа
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: CupertinoColors.systemGrey6.resolveFrom(context),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1,
-                      ),
                     ),
                     child: Text(
                       widget.character.species,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(1, 1),
-                            blurRadius: 2,
-                            color: Colors.black54,
-                          ),
-                        ],
+                        color: CupertinoColors.label.resolveFrom(context),
                       ),
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // Дополнительная информация
                   if (widget.character.type.isNotEmpty)
                     Text(
                       'Type: ${widget.character.type}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color:
+                            CupertinoColors.secondaryLabel.resolveFrom(context),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
                   if (widget.character.gender.isNotEmpty)
                     Text(
                       'Gender: ${widget.character.gender}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color:
+                            CupertinoColors.secondaryLabel.resolveFrom(context),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -493,8 +447,8 @@ class _CharacterCardFullState extends State<_CharacterCardFull> {
   }
 }
 
-class _DecisionOverlay extends StatelessWidget {
-  const _DecisionOverlay({
+class _DecisionOverlayIOS extends StatelessWidget {
+  const _DecisionOverlayIOS({
     required this.dx,
     required this.likeThreshold,
     required this.nopeThreshold,
@@ -517,7 +471,8 @@ class _DecisionOverlay extends StatelessWidget {
             left: 30,
             child: Opacity(
               opacity: likeOpacity,
-              child: _Stamp(text: 'LIKE', color: Colors.green),
+              child:
+                  _StampIOS(text: 'LIKE', color: CupertinoColors.systemGreen),
             ),
           ),
           Positioned(
@@ -525,7 +480,7 @@ class _DecisionOverlay extends StatelessWidget {
             right: 30,
             child: Opacity(
               opacity: nopeOpacity,
-              child: _Stamp(text: 'NOPE', color: Colors.red),
+              child: _StampIOS(text: 'NOPE', color: CupertinoColors.systemRed),
             ),
           ),
         ],
@@ -534,8 +489,8 @@ class _DecisionOverlay extends StatelessWidget {
   }
 }
 
-class _Stamp extends StatelessWidget {
-  const _Stamp({required this.text, required this.color});
+class _StampIOS extends StatelessWidget {
+  const _StampIOS({required this.text, required this.color});
   final String text;
   final Color color;
 
