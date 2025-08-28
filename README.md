@@ -1,6 +1,4 @@
-![Главная Светлая тема](https://github.com/user-attachments/assets/70f9a363-05e4-4833-8b5a-c314321048e3)# RickAndMortyApp
-
-![Uploading Главная Светлая тем![Главная Like](https://github.com/user-attachments/assets/e04d2533-307e-433a-9dc2-ee64d8652f2d)
-![Избранное](https://github.com/user-attachments/assets/289018aa-cc3d-41f8-a69e-078c812a360f)
-а.jpg…]()
-![Главная Nope](https://github.com/user-attachments/assets/ed05fb14-f797-4246-bb84-23bfb0f9f8eb)
+![Главная Like](https://github.com/user-attachments/assets/b386c37a-6b25-4992-85dd-a4fe5040b888)
+![Избранное](https://github.com/user-attachments/assets/7ab63979-78af-40ef-8f0e-f6a2fd287242)
+![Главная Светлая тема](https://github.com/user-attachments/assets/3070fcc9-2276-4357-b440-1f90de9644d3)
+![Главная Nope](https://github.com/user-attachments/assets/579572c4-8070-4758-bfb9-194349ed4eb5)
